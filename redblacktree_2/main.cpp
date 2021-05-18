@@ -14,40 +14,34 @@ const int black = 0;
 const int red = 1;
 
 struct medicalRecord {    //진료기록을 담는 구조체
-    string sickness;
+    char* sickness;
     int expense;
-    medicalRecord(string sickness, int expense) {
+    medicalRecord(char* sickness, int expense) {
         this->sickness = sickness;
         this->expense = expense;
     }
 };
 
-struct patient {  // 환자 정보를 담는 구조체
+
+class node { //red black tree를 위한 노드 클래스
+public:
+    int b;  // black or red
+    int depth;  // 깊이
+    node* l, * r, * parent;   // 왼쪽자식, 오른쪽 자식, 부모
     int patientNumber;
-    string name;
-    string phoneNumber;
+    char* name;
+    char* phoneNumber;
     pair<int, int> address;
     stack<medicalRecord> mr;
-    patient(int n, string name, string pN, int ax, int ay, string d, int c) {
+    node(int bb, int n, char* name, char* pN, int ax, int ay, char* sick, int expense, class node* ll, class node* rr, class node* pp) {
+        b = bb;
         this->patientNumber = n;
         this->name = name;
         this->phoneNumber = pN;
         this->address.first = ax;
         this->address.second = ay;
-        medicalRecord mrIni = medicalRecord(d, c);
+        medicalRecord mrIni = medicalRecord(sick, expense);
         mr.push(mrIni);
-    }
-    patient();
-};
-
-struct node { //red black tree를 위한 노드 클래스
-    int b;  // black or red
-    int depth;  // 깊이
-    node* l, * r, * parent;   // 왼쪽자식, 오른쪽 자식, 부모
-    patient* p; // 환자 정보
-    node(int bb, int nn, string name, string pN, int ax, int ay, string sick, int expense, class node* ll, class node* rr, class node* pp) {
-        b = bb;
-        p = new patient(nn, name, pN, ax, ay, sick, expense);
         l = ll;
         r = rr;
         parent = pp;
@@ -76,7 +70,7 @@ public:
     }
 
     // 환자 추가
-    node* insert(int n, string name, string pN, int ax, int ay, string sick, int expense) {
+    node* insert(int n, char* name, char* pN, int ax, int ay, char* sick, int expense) {
 
         //
         node* x = getRoot();   // 삽입할 곳을 찾기 위함
@@ -92,7 +86,7 @@ public:
             while (x != leafNode) {
                 y = x;
 
-                if (x->p->patientNumber < n)
+                if (x->patientNumber < n)
                     x = x->r;
                 else
                     x = x->l;
@@ -102,7 +96,7 @@ public:
 
             if (y == nullptr)
                 root = z;
-            else if (z->p->patientNumber > y->p->patientNumber)
+            else if (z->patientNumber > y->patientNumber)
                 y->r = z;
             else
                 y->l = z;
@@ -206,9 +200,9 @@ public:
         node* x = root;
         node* parent = nullptr;
 
-        while (x != nullptr && x != leafNode && x->p->patientNumber != patient_number) {
+        while (x != nullptr && x != leafNode && x->patientNumber != patient_number) {
             parent = x;
-            x = (patient_number < parent->p->patientNumber) ? parent->l : parent->r;
+            x = (patient_number < parent->patientNumber) ? parent->l : parent->r;
         }
         if (x == leafNode || x == nullptr)
             return nullptr;
@@ -226,26 +220,26 @@ public:
         depthFix(z->r);
     }
 
-    int epidemic(string d, node* nowNode, int& cnt) {
+    void epidemic(char* d, node* nowNode, int& cnt) {
         if (nowNode == leafNode)
-            return cnt;
-        if (nowNode->p->mr.top().sickness == d)  //
+            return;
+        if (!strcmp(nowNode->mr.top().sickness, d))  //
             cnt++;
         if (nowNode->l != leafNode)
             epidemic(d, nowNode->l, cnt);   //
         if (nowNode->r != leafNode)
             epidemic(d, nowNode->r, cnt);   //
-        return cnt;
+        return;
 
     }
 
-    int addDisease(int k, string d, int c) {
+    int addDisease(int k, char* d, int c) {
         node* find = search(k);
         if (find == nullptr)
             return 0;
         else {
             medicalRecord mr = medicalRecord(d, c);
-            find->p->mr.push(mr);
+            find->mr.push(mr);
             return find->depth;
         }
     }
@@ -257,17 +251,17 @@ int main(int argc, const char* argv[]) {
     scanf("%d", &T);
     redBlackTree* rbt = new redBlackTree();
     int k;  // 환자 번호
-    string n;   // 환자 이름
-    string h;   // 휴대폰 번호
+    char n[21];   // 환자 이름
+    char h[12];   // 휴대폰 번호
     int ax, ay; // 주소
-    string di;  // 병명
+    char di[12];  // 병명
     int c;  // 진료비
     node* returnValue;
     for (int i = 0; i < T; i++) {
         char type; // I:신규가입, F:검색, A:추가진료, E:유행병 조사
         scanf("%c", &type);
         if (type == 'I') {
-            scanf("%d %s %s %d %d %s %d", &k, &n, &h, &ax, &ay, &di, &c);
+            scanf("%d %s %s %d %d %s %d", &k, n, h, &ax, &ay, di, &c);
             returnValue = rbt->insert(k, n, h, ax, ay, di, c);
             if (returnValue == nullptr) {
                 printf("%d 0 \n", rbt->search(k)->depth);
@@ -282,10 +276,10 @@ int main(int argc, const char* argv[]) {
             if (returnValue == nullptr)
                 printf("Not found\n");
             else
-                printf("%d %s %s %d %d\n", returnValue->depth, returnValue->p->name.c_str(), returnValue->p->phoneNumber.c_str(), returnValue->p->address.first, returnValue->p->address.second);
+                printf("%d %s %s %d %d\n", returnValue->depth, returnValue->name, returnValue->phoneNumber, returnValue->address.first, returnValue->address.second);
         }
         else if (type == 'A') {
-            scanf("%d %s %d", &k, &di, &c);
+            scanf("%d %s %d", &k, di, &c);
             if (rbt->search(k) == nullptr)
                 printf("Not found\n");
             else {
@@ -293,11 +287,13 @@ int main(int argc, const char* argv[]) {
             }
         }
         else if (type == 'E') {
-            getline(cin, di);
+            scanf("%s", di);
             int cnt = 0;
             rbt->epidemic(di, rbt->getRoot(), cnt);
             printf("%d\n", cnt);
         }
         fflush(stdin);
     }
+    std::ios_base::sync_with_stdio(false);
+
 }
